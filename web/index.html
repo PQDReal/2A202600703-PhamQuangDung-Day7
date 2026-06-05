@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TextEngine Lab — Embedding & Vector Store Demo</title>
+  <meta name="description" content="Interactive demo of text chunking strategies, embedding engines, and vector similarity search for RAG systems — Lab 7 Data Foundations." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ===== HERO HEADER ===== -->
+<header class="hero" id="hero">
+  <div class="hero-bg">
+    <canvas id="particleCanvas"></canvas>
+    <div class="hero-gradient"></div>
+  </div>
+  <div class="hero-content">
+    <div class="badge-row">
+      <span class="badge">Lab 7</span>
+      <span class="badge badge-outline">Data Foundations</span>
+    </div>
+    <h1 class="hero-title">
+      <span class="gradient-text">TextEngine</span>
+      <br/>Lab Demo
+    </h1>
+    <p class="hero-subtitle">
+      Khám phá engine nhận diện & phân tích văn bản: Chunking · Embedding · Vector Similarity · RAG
+    </p>
+    <div class="hero-stats">
+      <div class="stat-card">
+        <span class="stat-num">3</span>
+        <span class="stat-label">Chunking Strategies</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num">3</span>
+        <span class="stat-label">Embedding Backends</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num">42</span>
+        <span class="stat-label">Tests Passed</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num">5</span>
+        <span class="stat-label">Benchmark Queries</span>
+      </div>
+    </div>
+    <div class="hero-cta">
+      <a href="#playground" class="btn btn-primary">🚀 Thử Ngay</a>
+      <a href="#architecture" class="btn btn-ghost">📐 Kiến Trúc</a>
+    </div>
+  </div>
+  <div class="scroll-indicator">
+    <div class="scroll-dot"></div>
+  </div>
+</header>
+
+<!-- ===== NAV ===== -->
+<nav class="sticky-nav" id="stickyNav">
+  <div class="nav-inner">
+    <span class="nav-logo">⚡ TextEngine</span>
+    <div class="nav-links">
+      <a href="#playground" class="nav-link active">Playground</a>
+      <a href="#chunking" class="nav-link">Chunking</a>
+      <a href="#similarity" class="nav-link">Similarity</a>
+      <a href="#usecases" class="nav-link">Use Cases</a>
+      <a href="#architecture" class="nav-link">Kiến Trúc</a>
+      <a href="#results" class="nav-link">Kết Quả</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main>
+
+<!-- ======================== PLAYGROUND SECTION ======================== -->
+<section class="section" id="playground">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">🎮 Interactive</span>
+      <h2 class="section-title">Text Analysis <span class="gradient-text">Playground</span></h2>
+      <p class="section-desc">Nhập văn bản hoặc upload file .txt/.md để xem kết quả phân tích toàn diện</p>
+    </div>
+
+    <div class="playground-grid">
+      <!-- Input Panel -->
+      <div class="panel panel-input">
+        <div class="panel-header">
+          <h3>📄 Văn Bản Đầu Vào</h3>
+          <div class="panel-actions">
+            <button class="btn-icon" id="clearBtn" title="Xóa">🗑️</button>
+          </div>
+        </div>
+
+        <div class="input-mode-tabs">
+          <button class="mode-tab active" id="typeTab" onclick="switchMode('type')">✏️ Tự nhập</button>
+          <button class="mode-tab" id="uploadTab" onclick="switchMode('upload')">📁 Upload file</button>
+          <button class="mode-tab" id="sampleTab" onclick="switchMode('sample')">📚 Mẫu sẵn có</button>
+        </div>
+
+        <div id="typeMode" class="input-area">
+          <textarea id="textInput" placeholder="Dán hoặc nhập văn bản vào đây...&#10;&#10;Ví dụ: Mô tả hệ thống RAG, tài liệu kỹ thuật, FAQ, v.v." rows="10"></textarea>
+          <div class="char-count"><span id="charCount">0</span> ký tự</div>
+        </div>
+
+        <div id="uploadMode" class="input-area hidden">
+          <div class="upload-zone" id="uploadZone">
+            <div class="upload-icon">📂</div>
+            <p>Kéo thả file vào đây</p>
+            <p class="upload-sub">hoặc</p>
+            <label for="fileInput" class="btn btn-outline">Chọn File</label>
+            <input type="file" id="fileInput" accept=".txt,.md" hidden />
+            <p class="upload-hint">Hỗ trợ: .txt, .md</p>
+          </div>
+          <div id="uploadedInfo" class="upload-info hidden"></div>
+        </div>
+
+        <div id="sampleMode" class="input-area hidden">
+          <div class="sample-grid">
+            <button class="sample-card" onclick="loadSample('vector_store')">
+              <span class="sample-icon">🗄️</span>
+              <span class="sample-name">Vector Store Notes</span>
+              <span class="sample-meta">EN · 2149 chars</span>
+            </button>
+            <button class="sample-card" onclick="loadSample('rag_design')">
+              <span class="sample-icon">🔍</span>
+              <span class="sample-name">RAG System Design</span>
+              <span class="sample-meta">EN · 2416 chars</span>
+            </button>
+            <button class="sample-card" onclick="loadSample('vi_retrieval')">
+              <span class="sample-icon">🇻🇳</span>
+              <span class="sample-name">VI Retrieval Notes</span>
+              <span class="sample-meta">VI · 2188 chars</span>
+            </button>
+            <button class="sample-card" onclick="loadSample('chunking_report')">
+              <span class="sample-icon">📊</span>
+              <span class="sample-name">Chunking Report</span>
+              <span class="sample-meta">EN · 2008 chars</span>
+            </button>
+            <button class="sample-card" onclick="loadSample('python_intro')">
+              <span class="sample-icon">🐍</span>
+              <span class="sample-name">Python Introduction</span>
+              <span class="sample-meta">EN · 1953 chars</span>
+            </button>
+            <button class="sample-card" onclick="loadSample('customer_support')">
+              <span class="sample-icon">🎧</span>
+              <span class="sample-name">Customer Support</span>
+              <span class="sample-meta">EN · 1703 chars</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Config -->
+        <div class="config-panel">
+          <h4>⚙️ Cấu Hình</h4>
+          <div class="config-row">
+            <label>Chunk Size</label>
+            <div class="slider-wrap">
+              <input type="range" id="chunkSize" min="100" max="1000" value="500" step="50" />
+              <span id="chunkSizeVal">500</span>
+            </div>
+          </div>
+          <div class="config-row">
+            <label>Overlap</label>
+            <div class="slider-wrap">
+              <input type="range" id="overlap" min="0" max="200" value="50" step="10" />
+              <span id="overlapVal">50</span>
+            </div>
+          </div>
+          <div class="config-row">
+            <label>Embedding</label>
+            <select id="embedder">
+              <option value="mock">Mock (Deterministic)</option>
+              <option value="semantic">Semantic (Simulated)</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-full" id="analyzeBtn" onclick="analyzeText()">
+          ⚡ Phân Tích Ngay
+        </button>
+      </div>
+
+      <!-- Results Panel -->
+      <div class="panel panel-results" id="resultsPanel">
+        <div class="panel-header">
+          <h3>📊 Kết Quả Phân Tích</h3>
+          <div id="processingBadge" class="status-badge hidden">⏳ Đang xử lý...</div>
+        </div>
+
+        <div id="emptyState" class="empty-state">
+          <div class="empty-icon">🔮</div>
+          <p>Nhập văn bản và nhấn <strong>Phân Tích Ngay</strong></p>
+          <p class="empty-sub">Kết quả sẽ hiển thị tại đây</p>
+        </div>
+
+        <div id="analysisResults" class="hidden">
+          <!-- Metrics Row -->
+          <div class="metrics-row">
+            <div class="metric-chip">
+              <span class="metric-icon">📝</span>
+              <div>
+                <span class="metric-val" id="metricChars">0</span>
+                <span class="metric-label">Ký tự</span>
+              </div>
+            </div>
+            <div class="metric-chip">
+              <span class="metric-icon">🔤</span>
+              <div>
+                <span class="metric-val" id="metricWords">0</span>
+                <span class="metric-label">Từ</span>
+              </div>
+            </div>
+            <div class="metric-chip">
+              <span class="metric-icon">🧩</span>
+              <div>
+                <span class="metric-val" id="metricChunks">0</span>
+                <span class="metric-label">Chunks</span>
+              </div>
+            </div>
+            <div class="metric-chip">
+              <span class="metric-icon">📏</span>
+              <div>
+                <span class="metric-val" id="metricAvg">0</span>
+                <span class="metric-label">Avg Len</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Strategy Tabs -->
+          <div class="strategy-tabs">
+            <button class="strat-tab active" onclick="showStrategy('fixed')" id="tabFixed">Fixed-Size</button>
+            <button class="strat-tab" onclick="showStrategy('sentence')" id="tabSentence">Sentence</button>
+            <button class="strat-tab" onclick="showStrategy('recursive')" id="tabRecursive">Recursive ⭐</button>
+          </div>
+
+          <div id="chunksDisplay" class="chunks-display"></div>
+
+          <!-- Embedding Visualization -->
+          <div class="embed-section">
+            <h4>🔢 Vector Embedding Preview</h4>
+            <p class="embed-desc">Hash-based mock embedding (64 dims) của chunk đầu tiên:</p>
+            <div id="embeddingViz" class="embedding-viz"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================== CHUNKING SECTION ======================== -->
+<section class="section section-dark" id="chunking">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">🧩 Methods</span>
+      <h2 class="section-title">Chiến Lược <span class="gradient-text">Chunking</span></h2>
+      <p class="section-desc">So sánh trực quan 3 phương pháp chia văn bản với kết quả thực tế từ dữ liệu lab</p>
+    </div>
+
+    <div class="method-cards">
+      <!-- Fixed Size -->
+      <div class="method-card" data-strategy="fixed">
+        <div class="method-icon-wrap" style="--clr: #6366f1">
+          <span class="method-icon">📐</span>
+        </div>
+        <div class="method-header">
+          <h3>Fixed-Size Chunker</h3>
+          <span class="method-badge" style="background:#6366f120; color:#6366f1">Baseline</span>
+        </div>
+        <p class="method-desc">Chia văn bản theo số ký tự cố định với overlap tùy chọn. Đơn giản và dự đoán được.</p>
+        <div class="method-code">
+          <pre><code>FixedSizeChunker(
+  chunk_size=500,
+  overlap=50
+)</code></pre>
+        </div>
+        <div class="method-stats">
+          <div class="mstat">
+            <span class="mstat-icon">✅</span>
+            <span>Dự đoán được số chunk</span>
+          </div>
+          <div class="mstat">
+            <span class="mstat-icon">✅</span>
+            <span>Đơn giản implement</span>
+          </div>
+          <div class="mstat">
+            <span class="mstat-icon">⚠️</span>
+            <span>Có thể cắt ngang câu/ý</span>
+          </div>
+          <div class="mstat">
+            <span class="mstat-icon">⚠️</span>
+            <span>Không hiểu cấu trúc ngôn ngữ</span>
+          </div>
+        </div>
+        <div class="benchmark-row">
+          <div class="bench-item">
+            <span class="bench-label">vector_store_notes</span>
+            <div class="bench-bar-wrap">
+              <div class="bench-bar" style="width:62%; background:#6366f1"></div>
+              <span class="bench-val">5 chunks · avg 424</span>
+            </div>
+          </div>
+          <div class="bench-item">
+            <span class="bench-label">rag_system_design</span>
+            <div class="bench-bar-wrap">
+              <div class="bench-bar" style="width:62%; background:#6366f1"></div>
+              <span class="bench-val">5 chunks · avg 478</span>
+            </div>
+          </div>
+          <div class="bench-item">
+            <span class="bench-label">vi_retrieval_notes</span>
+            <div class="bench-bar-wrap">
+              <div class="bench-bar" style="width:50%; background:#6366f1"></div>
+              <span class="bench-val">4 chunks · avg 417</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sentence -->
+      <div class="method-card" data-strategy="sentence">
+        <div class="method-icon-wrap" style="--clr: #f59e0b">
+          <span class="method-icon">📝</span>
+        </div>
+        <div class="method-header">
+          <h3>Sentence Chunker</h3>
+          <span class="method-badge" style="background:#f59e0b20; color:#f59e0b">NLP-Aware</span>
+        </div>
+        <p class="method-desc">Sử dụng regex phát hiện ranh giới câu. Giữ nguyên ý nghĩa từng câu, phù hợp FAQ.</p>
+        <div class="method-code">
+          <pre><code>SentenceChunker(
+  max_sentences_per_chunk=3
+)</code></pre>
+        </div>
+        <div class="method-stats">
+          <div class="mstat">
+            <span class="mstat-icon">✅</span>
+            <span>Giữ ranh giới câu tự nhiên</span>
+          </div>
+          <div class="mstat">
+            <span class="mstat-icon">✅</span>
+            <span>Chunk dễ đọc, coherent</span>
+          </div>
+          <div class="mstat">
+            <span class="mstat-icon">⚠️</span>
+            <span>Chunk size không đồng đều</span>
+          </div>
+          <div class="mstat">
+            <span class="mstat-icon">⚠️</span>
+            <span>Câu dài có thể vượt limit</span>
+          </div>
+        </div>
+        <div class="benchmark-row">
+          <div class="bench-item">
+            <span class="bench-label">vector_store_notes</span>
+            <div class="bench-bar-wrap">
+              <div class="bench-bar" style="width:100%; background:#f59e0b"></div>
+              <span class="bench-val">8 chunks · avg 264</span>
+            </div>
+          </div>
+          <div class="bench-item">
+            <span class="bench-label">rag_system_design</span>
+            <div class="bench-bar-wrap">
+              <div class="bench-bar" style="width:62%; background:#f59e0b"></div>
+              <span class="bench-val">5 chunks · avg 476</span>
+            </div>
+          </div>
+          <div class="bench-item">
+            <span class="bench-label">vi_retrieval_notes</span>
+            <div class="bench-bar-wrap">
+              <div class="bench-bar" style="width:62%; background:#f59e0b"></div>
+              <span class="bench-val">5 chunks · avg 332</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recursive -->
+      <div class="method-card featured" data-strategy="recursive">
+        <div class="featured-badge">⭐ Best</div>
+        <div class="method-icon-wrap" style="--clr: #10b981">
+          <span class="method-icon">🔄</span>
+        </div>
+        <div class="method-header">
+          <h3>Recursive Chunker</h3>
+          <span class="method-badge" style="background:#10b98120; color:#10b981">Recommended</span>
+        </div>
+        <p class="method-desc">Ưu tiên separator theo thứ tự: paragraph → dòng → câu → khoảng trắng. Cân bằng nhất.</p>
+        <div class="method-code">
+          <pre><code>RecursiveChunker(
+  separators=["\\n\\n","\\n",". "," ",""],
+  chunk_size=500
+)</code></pre>
+        </div>
+        <div class="method-stats">
+          <div class="mstat">
+            <span class="mstat-icon">✅</span>
+            <span>Giữ cấu trúc paragraph/heading</span>
+          </div>
+          <div class="mstat">
+            <span class="mstat-icon">✅</span>
+            <span>Fallback thông minh</span>
+          </div>
+          <div class="mstat">
+            <span class="mstat-icon">✅</span>
+            <span>Retrieval quality cao nhất</span>
+          </div>
+          <div class="mstat">
+            <span class="mstat-icon">⚠️</span>
+            <span>Phức tạp hơn fixed-size</span>
+          </div>
+        </div>
+        <div class="benchmark-row">
+          <div class="bench-item">
+            <span class="bench-label">vector_store_notes</span>
+            <div class="bench-bar-wrap">
+              <div class="bench-bar" style="width:87%; background:#10b981"></div>
+              <span class="bench-val">7 chunks · avg 301</span>
+            </div>
+          </div>
+          <div class="bench-item">
+            <span class="bench-label">rag_system_design</span>
+            <div class="bench-bar-wrap">
+              <div class="bench-bar" style="width:87%; background:#10b981"></div>
+              <span class="bench-val">7 chunks · avg 340</span>
+            </div>
+          </div>
+          <div class="bench-item">
+            <span class="bench-label">vi_retrieval_notes</span>
+            <div class="bench-bar-wrap">
+              <div class="bench-bar" style="width:62%; background:#10b981"></div>
+              <span class="bench-val">5 chunks · avg 332</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formula Box -->
+    <div class="formula-box">
+      <h4>📐 Công Thức Tính Số Chunk</h4>
+      <div class="formula-content">
+        <div class="formula-display">
+          <code>chunks = ⌈(doc_length − overlap) / (chunk_size − overlap)⌉</code>
+        </div>
+        <div class="formula-examples">
+          <div class="formula-ex">
+            <strong>Ví dụ 1:</strong> doc=10,000 chars, size=500, overlap=50
+            <br/><code>⌈(10000 − 50) / (500 − 50)⌉ = ⌈9950/450⌉ = ⌈22.1⌉ = <strong>23 chunks</strong></code>
+          </div>
+          <div class="formula-ex">
+            <strong>Ví dụ 2:</strong> doc=10,000 chars, size=500, overlap=100
+            <br/><code>⌈(10000 − 100) / (500 − 100)⌉ = ⌈9900/400⌉ = ⌈24.75⌉ = <strong>25 chunks</strong></code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================== SIMILARITY SECTION ======================== -->
+<section class="section" id="similarity">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">🔢 Math</span>
+      <h2 class="section-title">Cosine <span class="gradient-text">Similarity</span></h2>
+      <p class="section-desc">So sánh độ tương đồng ngữ nghĩa giữa hai đoạn văn bản</p>
+    </div>
+
+    <div class="similarity-layout">
+      <div class="sim-input-group">
+        <div class="sim-panel">
+          <label class="sim-label">📌 Câu A</label>
+          <textarea id="simTextA" class="sim-textarea" placeholder="Nhập câu hoặc đoạn văn A...">Python is a programming language used for data analysis.</textarea>
+        </div>
+        <div class="sim-vs">VS</div>
+        <div class="sim-panel">
+          <label class="sim-label">📌 Câu B</label>
+          <textarea id="simTextB" class="sim-textarea" placeholder="Nhập câu hoặc đoạn văn B...">Python is commonly used to analyze data and build software.</textarea>
+        </div>
+      </div>
+
+      <div class="sim-presets">
+        <span class="preset-label">Thử nhanh:</span>
+        <button class="preset-btn" onclick="loadPreset('high')">🟢 High Similarity</button>
+        <button class="preset-btn" onclick="loadPreset('low')">🔴 Low Similarity</button>
+        <button class="preset-btn" onclick="loadPreset('vector')">🗄️ Vector Store</button>
+        <button class="preset-btn" onclick="loadPreset('customer')">🎧 Support</button>
+      </div>
+
+      <button class="btn btn-primary btn-full" onclick="computeSimilarity()">🔍 Tính Cosine Similarity</button>
+
+      <div id="similarityResult" class="sim-result hidden">
+        <div class="sim-score-wrap">
+          <div class="sim-score-circle" id="simCircle">
+            <svg viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="#1e293b" stroke-width="10"/>
+              <circle cx="60" cy="60" r="50" fill="none" stroke-width="10"
+                stroke-dasharray="314" stroke-dashoffset="314"
+                stroke-linecap="round"
+                id="simProgressArc"
+                style="transform: rotate(-90deg); transform-origin: center"/>
+            </svg>
+            <div class="sim-score-inner">
+              <span class="sim-score-val" id="simScoreVal">0.00</span>
+              <span class="sim-score-label">similarity</span>
+            </div>
+          </div>
+          <div class="sim-interpretation" id="simInterpret">
+            <div class="interp-tag" id="interpTag"></div>
+            <p id="interpText"></p>
+          </div>
+        </div>
+
+        <div class="sim-details">
+          <div class="sim-detail-row">
+            <span>Phương pháp</span>
+            <code>Cosine Similarity = dot(A,B) / (||A|| × ||B||)</code>
+          </div>
+          <div class="sim-detail-row">
+            <span>Embedding</span>
+            <code id="simEmbedInfo">Mock (MD5 hash, 64 dims, L2-normalized)</code>
+          </div>
+          <div class="sim-detail-row">
+            <span>||Vec A||</span>
+            <code id="simNormA">-</code>
+          </div>
+          <div class="sim-detail-row">
+            <span>||Vec B||</span>
+            <code id="simNormB">-</code>
+          </div>
+          <div class="sim-detail-row">
+            <span>dot(A,B)</span>
+            <code id="simDot">-</code>
+          </div>
+        </div>
+
+        <div class="sim-history" id="simHistory">
+          <h4>📋 Lịch Sử So Sánh</h4>
+          <div id="simHistoryList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lab Results Table -->
+    <div class="lab-results-table">
+      <h4>📊 Kết Quả Lab — Similarity Predictions</h4>
+      <div class="note-box">
+        ⚠️ Lưu ý: Mock embedder dùng MD5 hash → không phản ánh ngữ nghĩa thật. Kết quả dưới đây từ lab với <code>_mock_embed</code>.
+      </div>
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Câu A</th>
+            <th>Câu B</th>
+            <th>Dự đoán</th>
+            <th>Score thực tế</th>
+            <th>Đúng?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>Python is a programming language.</td>
+            <td>Python is used to write software.</td>
+            <td><span class="badge-high">HIGH</span></td>
+            <td><code>0.0502</code></td>
+            <td><span class="badge-wrong">❌ Mock</span></td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>Vector databases store embeddings.</td>
+            <td>Embeddings are saved in vector stores...</td>
+            <td><span class="badge-high">HIGH</span></td>
+            <td><code>-0.0318</code></td>
+            <td><span class="badge-wrong">❌ Mock</span></td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>Customer refunds require manager approval.</td>
+            <td>Refund requests need approval from a manager.</td>
+            <td><span class="badge-high">HIGH</span></td>
+            <td><code>-0.0157</code></td>
+            <td><span class="badge-wrong">❌ Mock</span></td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>The weather is rainy today.</td>
+            <td>Neural networks learn from data.</td>
+            <td><span class="badge-low">LOW</span></td>
+            <td><code>-0.0109</code></td>
+            <td><span class="badge-ok">✅ ~OK</span></td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>Bananas are yellow fruits.</td>
+            <td>SQL joins combine database tables.</td>
+            <td><span class="badge-low">LOW</span></td>
+            <td><code>0.2100</code></td>
+            <td><span class="badge-wrong">❌ Mock</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="table-note">💡 Với <code>all-MiniLM-L6-v2</code> (semantic embedding), pairs 1-3 sẽ cho score &gt; 0.85</p>
+    </div>
+  </div>
+</section>
+
+<!-- ======================== USE CASES SECTION ======================== -->
+<section class="section section-dark" id="usecases">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">💼 Applications</span>
+      <h2 class="section-title">Use Cases <span class="gradient-text">Demo</span></h2>
+      <p class="section-desc">5 benchmark queries thực tế với kết quả retrieval từ knowledge base</p>
+    </div>
+
+    <div class="usecase-grid">
+      <div class="usecase-sidebar">
+        <div class="usecase-query-list" id="queryList">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+      <div class="usecase-result-panel" id="usecaseResult">
+        <div class="empty-state">
+          <div class="empty-icon">🔍</div>
+          <p>Chọn một query để xem kết quả retrieval</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================== ARCHITECTURE SECTION ======================== -->
+<section class="section" id="architecture">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">📐 Design</span>
+      <h2 class="section-title">Kiến Trúc <span class="gradient-text">Hệ Thống</span></h2>
+      <p class="section-desc">RAG pipeline — từ document đến câu trả lời grounded</p>
+    </div>
+
+    <div class="arch-diagram">
+      <div class="arch-flow">
+        <div class="arch-node node-input">
+          <div class="arch-icon">📄</div>
+          <div class="arch-node-title">Documents</div>
+          <div class="arch-node-sub">.txt / .md files</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node node-chunk">
+          <div class="arch-icon">🧩</div>
+          <div class="arch-node-title">Chunking</div>
+          <div class="arch-node-sub">Fixed / Sentence / Recursive</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node node-embed">
+          <div class="arch-icon">🔢</div>
+          <div class="arch-node-title">Embedding</div>
+          <div class="arch-node-sub">Mock / Local / OpenAI</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node node-store">
+          <div class="arch-icon">🗄️</div>
+          <div class="arch-node-title">Vector Store</div>
+          <div class="arch-node-sub">In-memory / ChromaDB</div>
+        </div>
+      </div>
+
+      <div class="arch-query-flow">
+        <div class="arch-query-node">
+          <div class="arch-icon">❓</div>
+          <div class="arch-node-title">Query</div>
+          <div class="arch-node-sub">User question</div>
+        </div>
+        <div class="arch-arrow arch-arrow-down">↓</div>
+        <div class="arch-node node-retrieve">
+          <div class="arch-icon">🎯</div>
+          <div class="arch-node-title">Retrieve</div>
+          <div class="arch-node-sub">Top-K similarity search<br/>+ metadata filter</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node node-agent">
+          <div class="arch-icon">🤖</div>
+          <div class="arch-node-title">RAG Agent</div>
+          <div class="arch-node-sub">Context + Prompt → LLM</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node node-answer">
+          <div class="arch-icon">💬</div>
+          <div class="arch-node-title">Answer</div>
+          <div class="arch-node-sub">Grounded response</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Embedding Backends -->
+    <div class="backends-grid">
+      <div class="backend-card">
+        <div class="backend-icon">🎭</div>
+        <h4>MockEmbedder</h4>
+        <p>MD5 hash → LCG PRNG → L2 normalize. Deterministic, không phụ thuộc model. Dùng cho testing.</p>
+        <div class="backend-code"><code>MockEmbedder(dim=64)</code></div>
+        <div class="backend-tag" style="background:#6366f120; color:#6366f1">Default / Tests</div>
+      </div>
+      <div class="backend-card">
+        <div class="backend-icon">🖥️</div>
+        <h4>LocalEmbedder</h4>
+        <p>Sentence Transformers <code>all-MiniLM-L6-v2</code>. Chạy offline, semantic quality cao, L2-normalized.</p>
+        <div class="backend-code"><code>LocalEmbedder("all-MiniLM-L6-v2")</code></div>
+        <div class="backend-tag" style="background:#10b98120; color:#10b981">Production Local</div>
+      </div>
+      <div class="backend-card">
+        <div class="backend-icon">☁️</div>
+        <h4>OpenAIEmbedder</h4>
+        <p>OpenAI <code>text-embedding-3-small</code>. State-of-the-art semantic understanding, API-based.</p>
+        <div class="backend-code"><code>OpenAIEmbedder("text-embedding-3-small")</code></div>
+        <div class="backend-tag" style="background:#f59e0b20; color:#f59e0b">Cloud / Best Quality</div>
+      </div>
+    </div>
+
+    <!-- EmbeddingStore Features -->
+    <div class="store-features">
+      <h4>🗄️ EmbeddingStore — Tính Năng</h4>
+      <div class="features-grid">
+        <div class="feature-item">
+          <span class="feature-icon">➕</span>
+          <div>
+            <strong>add_documents()</strong>
+            <p>Embed và lưu danh sách Document vào store</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">🔍</span>
+          <div>
+            <strong>search(query, top_k)</strong>
+            <p>Dot product similarity ranking trên toàn store</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">🎯</span>
+          <div>
+            <strong>search_with_filter()</strong>
+            <p>Pre-filter theo metadata, sau đó similarity search</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">🗑️</span>
+          <div>
+            <strong>delete_document(doc_id)</strong>
+            <p>Xóa tất cả chunks thuộc về một document</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">📊</span>
+          <div>
+            <strong>get_collection_size()</strong>
+            <p>Trả về số chunks đang được lưu trong store</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">🔌</span>
+          <div>
+            <strong>ChromaDB-ready</strong>
+            <p>Auto-fallback in-memory nếu ChromaDB không khả dụng</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================== RESULTS SECTION ======================== -->
+<section class="section section-dark" id="results">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">📈 Report</span>
+      <h2 class="section-title">Kết Quả <span class="gradient-text">Lab 7</span></h2>
+      <p class="section-desc">Tổng hợp kết quả đánh giá và self-assessment</p>
+    </div>
+
+    <!-- Test Results -->
+    <div class="results-highlight">
+      <div class="result-big-card">
+        <div class="rbig-icon">✅</div>
+        <div class="rbig-num">42<span>/42</span></div>
+        <div class="rbig-label">Tests Passed</div>
+        <div class="rbig-sub">pytest tests/ -v · 0.08s</div>
+      </div>
+      <div class="result-big-card">
+        <div class="rbig-icon">🧩</div>
+        <div class="rbig-num">19</div>
+        <div class="rbig-label">Chunks Stored</div>
+        <div class="rbig-sub">Recursive strategy · 3 sample docs</div>
+      </div>
+      <div class="result-big-card">
+        <div class="rbig-icon">🎯</div>
+        <div class="rbig-num">3<span>/3</span></div>
+        <div class="rbig-label">Top-3 Relevant</div>
+        <div class="rbig-sub">Filtered (language=en) search</div>
+      </div>
+    </div>
+
+    <!-- Self Evaluation Table -->
+    <div class="eval-section">
+      <h4>📋 Tự Đánh Giá</h4>
+      <table class="eval-table">
+        <thead>
+          <tr>
+            <th>Tiêu Chí</th>
+            <th>Loại</th>
+            <th>Điểm</th>
+            <th>Chi Tiết</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Warm-up (Cosine, Chunking Math)</td>
+            <td><span class="type-personal">Cá nhân</span></td>
+            <td><div class="score-bar"><div class="score-fill" style="width:100%">5/5</div></div></td>
+            <td>Công thức, examples đúng</td>
+          </tr>
+          <tr>
+            <td>Document Selection</td>
+            <td><span class="type-group">Nhóm</span></td>
+            <td><div class="score-bar"><div class="score-fill" style="width:100%">10/10</div></div></td>
+            <td>Metadata schema đầy đủ</td>
+          </tr>
+          <tr>
+            <td>Chunking Strategy</td>
+            <td><span class="type-group">Nhóm</span></td>
+            <td><div class="score-bar"><div class="score-fill" style="width:100%">15/15</div></div></td>
+            <td>So sánh 3 strategies chi tiết</td>
+          </tr>
+          <tr>
+            <td>My Approach</td>
+            <td><span class="type-personal">Cá nhân</span></td>
+            <td><div class="score-bar"><div class="score-fill" style="width:100%">10/10</div></div></td>
+            <td>Implement đầy đủ, có giải thích</td>
+          </tr>
+          <tr>
+            <td>Similarity Predictions</td>
+            <td><span class="type-personal">Cá nhân</span></td>
+            <td><div class="score-bar"><div class="score-fill" style="width:100%">5/5</div></div></td>
+            <td>5 cặp với phân tích mock vs real</td>
+          </tr>
+          <tr>
+            <td>Core Implementation (Tests)</td>
+            <td><span class="type-personal">Cá nhân</span></td>
+            <td><div class="score-bar"><div class="score-fill" style="width:100%">30/30</div></div></td>
+            <td>42/42 tests pass</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Learnings -->
+    <div class="learnings-grid">
+      <div class="learning-card">
+        <div class="learning-icon">💡</div>
+        <h4>Key Insight #1</h4>
+        <p>Mock embeddings không hiểu ngữ nghĩa thật. Pipeline hoạt động nhưng score không phản ánh similarity. Cần <code>all-MiniLM-L6-v2</code> hoặc OpenAI cho semantic evaluation nghiêm túc.</p>
+      </div>
+      <div class="learning-card">
+        <div class="learning-icon">🔍</div>
+        <h4>Key Insight #2</h4>
+        <p>Metadata filtering quan trọng không kém vector similarity. <code>search_with_filter(language=en)</code> loại được chunks tiếng Việt trước khi rank, cải thiện precision đáng kể.</p>
+      </div>
+      <div class="learning-card">
+        <div class="learning-icon">🧩</div>
+        <h4>Key Insight #3</h4>
+        <p>RecursiveChunker là best default cho tài liệu .md/.txt có cấu trúc. Nó tận dụng paragraph trước, fallback câu/từ sau — preserving context tốt nhất trong benchmark.</p>
+      </div>
+      <div class="learning-card">
+        <div class="learning-icon">🤖</div>
+        <h4>Key Insight #4</h4>
+        <p>RAG agent cần grounding prompt rõ ràng: "chỉ dùng context dưới đây, nói rõ nếu không đủ thông tin". Điều này giảm hallucination và trace kết quả về nguồn gốc.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-content">
+      <div class="footer-brand">
+        <span class="footer-logo">⚡ TextEngine Lab</span>
+        <p>Lab 7: Embedding & Vector Store — Data Foundations</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <span class="footer-col-title">Modules</span>
+          <code>src/chunking.py</code>
+          <code>src/embeddings.py</code>
+          <code>src/store.py</code>
+          <code>src/agent.py</code>
+          <code>src/models.py</code>
+        </div>
+        <div class="footer-col">
+          <span class="footer-col-title">Sections</span>
+          <a href="#playground">Playground</a>
+          <a href="#chunking">Chunking</a>
+          <a href="#similarity">Similarity</a>
+          <a href="#usecases">Use Cases</a>
+          <a href="#architecture">Architecture</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>Built with ❤️ · VinUni AI-20K · Data Foundations Lab 7</p>
+    </div>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

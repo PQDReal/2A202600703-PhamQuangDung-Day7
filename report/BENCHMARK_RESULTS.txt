@@ -1,0 +1,217 @@
+KẾT QUẢ CHẠY BENCHMARK 5 CÂU HỎI
+================================
+
+Ngày chạy lại: 2026-06-05
+
+1. Cấu hình chạy
+----------------
+
+Hệ thống được chạy trên 7 file tài liệu Hồ Chí Minh trong thư mục `data/`:
+
+1. `01_overview_and_roles.md`
+2. `02_family_background.md`
+3. `03_youth_and_education.md`
+4. `04_overseas_activities_1911_1923.md`
+5. `05_revolutionary_activities_1924_1941.md`
+6. `06_return_to_vietnam_and_independence_1941_1945.md`
+7. `07_leadership_and_war_1945_1969.md`
+
+Thông số:
+
+- Số file: 7
+- Số document load được: 7
+- Chunking strategy: `RecursiveChunker(chunk_size=500)`
+- Số chunk được tạo: 48
+- Embedding backend: `mock hashed lexical embeddings fallback`
+- Search: lấy top-3 chunks cho mỗi query
+- Agent: trả lời dựa trên top-3 context được retrieve
+
+
+2. Quy tắc chấm điểm
+--------------------
+
+- 2 điểm: Top-3 có chunk relevant và agent answer chính xác.
+- 1 điểm: Top-3 có chunk relevant nhưng chunk relevant không ở top-1, hoặc answer thiếu chi tiết.
+- 0 điểm: Top-3 không có chunk relevant.
+
+
+3. Tổng điểm
+------------
+
+Tổng điểm: 6 / 10
+
+| # | Query | Expected topic | Relevant rank | Agent đúng? | Điểm |
+|---|-------|----------------|---------------|-------------|------|
+| 1 | Hồ Chí Minh tên khai sinh là gì và sinh năm nào? | overview | 1 | Có | 2/2 |
+| 2 | Quê quán và gia đình của Hồ Chí Minh có những thông tin chính nào? | family_background | 3 | Có | 1/2 |
+| 3 | Vì sao Nguyễn Tất Thành rời Việt Nam năm 1911? | overseas_activities | 3 | Có | 1/2 |
+| 4 | Hồ Chí Minh có vai trò gì trong Cách mạng Tháng Tám và sự ra đời nước Việt Nam Dân chủ Cộng hòa? | independence_leadership | Không có | Không | 0/2 |
+| 5 | Ngoài hoạt động chính trị, Hồ Chí Minh còn có đóng góp gì về văn hóa? | legacy_works | 1 | Có | 2/2 |
+
+
+4. Chi tiết từng câu
+--------------------
+
+Câu 1
+~~~~~
+
+Query:
+Hồ Chí Minh tên khai sinh là gì và sinh năm nào?
+
+Gold answer:
+Nguyễn Sinh Cung, sinh ngày 19/5/1890.
+
+Top-3 retrieved chunks:
+
+1. score=0.3898 | relevant=True | topic=overview | file=01_overview_and_roles.md
+   Nội dung: Hồ Chí Minh, tên khai sinh là Nguyễn Sinh Cung, sinh ngày 19 tháng 5 năm 1890...
+
+2. score=0.3395 | relevant=False | topic=family_background | file=02_family_background.md
+   Nội dung: Nhắc đến tên lúc nhỏ Nguyễn Sinh Cung, nhưng không phải chunk chứa đầy đủ ngày sinh theo expected topic.
+
+3. score=0.3228 | relevant=False | topic=return_vietnam_independence | file=06_return_to_vietnam_and_independence_1941_1945.md
+   Nội dung: Hội nghị ở Pác Bó và việc thành lập Việt Minh.
+
+Agent answer:
+Hồ Chí Minh tên khai sinh là Nguyễn Sinh Cung, sinh ngày 19 tháng 5 năm 1890.
+
+Điểm: 2/2
+
+Lý do:
+Chunk relevant nằm ở top-1 và câu trả lời đúng với gold answer.
+
+
+Câu 2
+~~~~~
+
+Query:
+Quê quán và gia đình của Hồ Chí Minh có những thông tin chính nào?
+
+Gold answer:
+Quê ở Kim Liên/Nam Đàn/Nghệ An; cha là Nguyễn Sinh Sắc, mẹ là Hoàng Thị Loan.
+
+Top-3 retrieved chunks:
+
+1. score=0.2889 | relevant=False | topic=family_background | file=02_family_background.md
+   Nội dung: Quê quán, làng Kim Liên, huyện Nam Đàn, tỉnh Nghệ An.
+
+2. score=0.2223 | relevant=False | topic=youth_and_education | file=03_youth_and_education.md
+   Nội dung: Nguyễn Tất Thành vào Sài Gòn và tìm việc trên tàu viễn dương.
+
+3. score=0.1541 | relevant=True | topic=family_background | file=02_family_background.md
+   Nội dung: Cha là Nguyễn Sinh Sắc, mẹ là Hoàng Thị Loan.
+
+Agent answer:
+Quê nội của Hồ Chí Minh là làng Kim Liên, huyện Nam Đàn, tỉnh Nghệ An; cha là Nguyễn Sinh Sắc, mẹ là Hoàng Thị Loan.
+
+Điểm: 1/2
+
+Lý do:
+Top-3 có chunk relevant và agent answer đúng. Tuy nhiên chunk chứa thông tin gia đình nằm ở rank 3, không phải top-1.
+
+
+Câu 3
+~~~~~
+
+Query:
+Vì sao Nguyễn Tất Thành rời Việt Nam năm 1911?
+
+Gold answer:
+Ông muốn ra nước ngoài học hỏi tinh hoa, tiến bộ từ phương Tây và tìm con đường cứu nước.
+
+Top-3 retrieved chunks:
+
+1. score=0.4007 | relevant=False | topic=revolutionary_activities | file=05_revolutionary_activities_1924_1941.md
+   Nội dung: Nguyễn Ái Quốc thống nhất các tổ chức cộng sản ở Hồng Kông năm 1930.
+
+2. score=0.3806 | relevant=False | topic=family_background | file=02_family_background.md
+   Nội dung: Gia đình, thời gian vào Huế và việc đổi tên thành Nguyễn Tất Thành.
+
+3. score=0.3195 | relevant=True | topic=youth_and_education | file=03_youth_and_education.md
+   Nội dung: Nguyễn Tất Thành lên tàu năm 1911 để ra nước ngoài; mục tiêu là học hỏi tinh hoa và tiến bộ từ phương Tây.
+
+Agent answer:
+Nguyễn Tất Thành rời Việt Nam năm 1911 để ra nước ngoài, học hỏi tinh hoa và tiến bộ từ các nước phương Tây.
+
+Điểm: 1/2
+
+Lý do:
+Top-3 có chunk relevant và agent answer đúng ý. Tuy nhiên chunk relevant nằm ở rank 3, không phải top-1.
+
+
+Câu 4
+~~~~~
+
+Query:
+Hồ Chí Minh có vai trò gì trong Cách mạng Tháng Tám và sự ra đời nước Việt Nam Dân chủ Cộng hòa?
+
+Gold answer:
+Ông lãnh đạo Việt Minh, đứng đầu Chính phủ lâm thời và đọc Tuyên ngôn Độc lập ngày 2/9/1945.
+
+Top-3 retrieved chunks:
+
+1. score=0.4957 | relevant=False | topic=overseas_activities | file=04_overseas_activities_1911_1923.md
+   Nội dung: Hội Liên hiệp Thuộc địa và báo Le Paria.
+
+2. score=0.4377 | relevant=False | topic=overview | file=01_overview_and_roles.md
+   Nội dung: Các chức vụ của Hồ Chí Minh trong Việt Nam Dân chủ Cộng hòa, nhưng thiếu cụm thông tin Chính phủ lâm thời và Tuyên ngôn Độc lập.
+
+3. score=0.4092 | relevant=False | topic=leadership_and_war | file=07_leadership_and_war_1945_1969.md
+   Nội dung: Sau khi nước Việt Nam Dân chủ Cộng hòa được thành lập, Hồ Chí Minh trở thành người đứng đầu chính phủ mới.
+
+Agent answer:
+Không tìm thấy đủ thông tin trong context được truy xuất.
+
+Điểm: 0/2
+
+Lý do:
+Top-3 không chứa chunk đầy đủ có các ý chính: Việt Minh, Chính phủ lâm thời, Tuyên ngôn Độc lập ngày 2/9/1945.
+
+
+Câu 5
+~~~~~
+
+Query:
+Ngoài hoạt động chính trị, Hồ Chí Minh còn có đóng góp gì về văn hóa?
+
+Gold answer:
+Ông còn là nhà văn, nhà thơ, nhà báo với nhiều tác phẩm bằng tiếng Việt, chữ Hán và tiếng Pháp.
+
+Top-3 retrieved chunks:
+
+1. score=0.4107 | relevant=True | topic=overview | file=01_overview_and_roles.md
+   Nội dung: Hồ Chí Minh còn là nhà văn, nhà thơ và nhà báo; có nhiều tác phẩm bằng tiếng Việt, tiếng Hán và tiếng Pháp.
+
+2. score=0.3451 | relevant=False | topic=revolutionary_activities | file=05_revolutionary_activities_1924_1941.md
+   Nội dung: Hoạt động cách mạng giai đoạn 1924-1941.
+
+3. score=0.3107 | relevant=False | topic=overview | file=01_overview_and_roles.md
+   Nội dung: Vai trò lãnh đạo trong giai đoạn chiến tranh.
+
+Agent answer:
+Ngoài hoạt động chính trị, Hồ Chí Minh còn là nhà văn, nhà thơ và nhà báo, có nhiều tác phẩm bằng tiếng Việt, tiếng Hán và tiếng Pháp.
+
+Điểm: 2/2
+
+Lý do:
+Chunk relevant nằm ở top-1 và agent answer đúng với gold answer.
+
+
+5. Nhận xét
+-----------
+
+Kết quả tổng thể ở mức trung bình: 6/10.
+
+Hệ thống làm tốt ở các câu có từ khóa rõ và chunk relevant nằm ngay top-1, như câu 1 và câu 5.
+
+Câu 2 và câu 3 vẫn trả lời đúng, nhưng bị mất điểm vì chunk relevant chỉ đứng rank 3. Điều này cho thấy retrieval chưa xếp hạng đủ tốt.
+
+Câu 4 thất bại vì hệ thống retrieve nhầm các chunk có nhiều từ chung như "Việt Nam Dân chủ Cộng hòa" hoặc "hoạt động", nhưng không lấy được chunk quan trọng trong file `06_return_to_vietnam_and_independence_1941_1945.md`.
+
+
+6. Hướng cải thiện
+------------------
+
+1. Dùng embedding thật thay cho mock embedding, ví dụ `all-MiniLM-L6-v2` hoặc OpenAI embedding.
+2. Dùng metadata filter khi biết query thuộc topic cụ thể.
+   Ví dụ câu 4 nên ưu tiên topic `return_vietnam_independence`.
